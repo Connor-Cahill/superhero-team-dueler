@@ -129,70 +129,155 @@ class Team:
     def stats(self):
         """ Prints the ratio of kills/death for each memeber of the team"""
         for i in self.heroes:
-            print('K/D is ' + i.kills/i.deaths)
+            i.show_stats()
 
-    def attack(self):
+    def attack(self, other_team):
         """Functions that itereates through the heroes in list and returns total attack damage """
-        total_team_dmg = 0
-        for i in self.heroes:
-            total_team_dmg += i.attack()
-        return total_team_dmg
+        team_dmg = sum([hero.attack() for hero in self.heroes])
+        enemies_killed = other_team.defend(team_dmg)
+        self.update_kills(enemies_killed)
+
+    def update_kills(self, kills):
+        """Updates a heroes kill count for kills made in team battles """
+        for hero in self.heroes:
+            hero.add_kill(kills)
+
+
+    def still_alive(self):
+        """Loops through teams hero list and returns true or false whether the hero is alive or not  """
+        for hero in self.heroes:
+            if hero.current_health > 0:
+                return True
+            return False
+
+    def defend(self, dmg_amount):
+        """Takes the sum of all heroes in Team class and returns that as the defend value of Team """
+        defense_strength = sum([hero.defend() for hero in self.heroes])
+        excess_dmg = dmg_amount - defense_strength
+        if excess_dmg > 0:
+            return self.take_damage(excess_dmg)
+        return 0
+
+    def take_damage(self, dmg):
+        """Takes damage from input and deals that to the team  """
+        dmg = dmg / len(self.heroes)
+        dead_heroes = 0
+        for hero in self.heroes:
+            hero.take_damage(dmg)
+            if hero.current_health <= 0:
+                dead_heroes += 1
+        return dead_heroes
+
+
 
 class Arena:
     def __init__(self, name):
         self.name = name
         self.team_one = None
         self.team_two = None
-    #### Figure out if another metod is needed for the hero build-out process
-    # def hero_additions(self, addition_type, hero_name):
-    #     """ allows for user to make additions to the hero. addition types include: abilities, armor, weapon, etc."""
-    #     additions = []
-    #     if self.yes_or_no
+
+
+
+
+    def build_team(self):
+        team_name = input('Enter a team name: ')
+        new_team = Team(team_name)
+        keep_adding_heroes = True
+        while keep_adding_heroes:
+            print('Adding a hero to {}...'.format(team_name))
+            new_hero = Hero(input('Enter the name of the hero: '))
+            new_hero.abilities = self.hero_additions('ability', new_hero.name)
+            new_hero.abilities = self.hero_additions('weapon', new_hero.name)
+            new_hero.armors = self.hero_additions('armor', new_hero.name)
+            new_team.add_hero(new_hero)
+            keep_adding_heroes = self.yes_or_no('Would you like to keep adding heroes to {}? Answer ( y/n ): '.format(team_name))
+        return new_team
+
+    def yes_or_no(self, message):
+        """Method that returns false and will end a loop when user input n, will return True if user inputs y """
+        user_res = input(message)
+        if user_res.lower() == 'y':
+            return True
+        elif user_res.lower() == 'n':
+            return False
+        else:
+            print('Input not recognized')
+        return self.yes_or_no(message)
+
+    def hero_additions(self, addition_type, hero_name):
+        """Method that allows users to make additions to heros while building out the team (using Arena methods) """
+        adds = []
+        if self.yes_or_no('do you want to add {} to {}? answer( y/n ): '.format(addition_type, hero_name)):
+            keep_asking = True
+            addition = Ability if addition_type =='ability' else Weapon if addition_type == 'weapon' else Armor
+            while keep_asking:
+                name = input('What is this {} called?'.format(addition_type))
+                block_or_attack = 'block' if addition_type == Armor else 'attack'
+                strength = int(input("What is {}'s  {} strength?".format(name, block_or_attack)))
+                adds.append(addition(name, strength))
+                keep_asking = self.yes_or_no('Do you want to add another {}? Answer ( y/n ): '.format(addition_type))
+            return adds
+
 
     def build_team_one(self):
         """Method builds out team one """
-        team_name = input('Enter Team Name: ')
-        new_team = Team(team_name)
-        adding_heroes = True
-        while adding_heroes:
-            print('Adding heroes to you team...')
-            new_hero_input(input('Enter New Hero Name or Enter "q" to quit: '))
-            new_hero = Hero(new_hero_input)
-            hero_ability_name = str(input('Give hero an ability: '))
-            new_hero.add_ability(hero_ability_name)
-            if new_hero.lower() == 'q':
-                adding_heroes = False
-            else:
-                adding_heroes = True
-
+        print('Building team one ....')
+        self.team_one =  self.build_team()
+        return self.team_one
 
 
     def build_team_two(self):
         """allows user to create team two  """
+        print('Building team two ...')
+        self.team_two = self.build_team()
+        return self.team_two
 
     def team_battle(self):
         """while loop for 2 teams to fight until all the heroes on one team are dead """
+        while self.team_one.still_alive() and self.team_two.still_alive():
+            self.team_one.attack(self.team_two)
+            self.team_two.attack(self.team_one)
+            if self.team_one.still_alive():
+                print('{} wins the battle!'.format(self.team_one.team_name))
+                self.team_one.update_kills(len(self.team_two.heroes))
+                return False
+            else:
+                print('{} wins the battle!'.format(self.team_two.team_name))
+                self.team_two.update_kills(len(self.team_one.heroes))
+                return False
+
 
     def show_stats(self):
         """Prints all heroes in arena stats(k/d ratio) """
+        print('Printing stats')
+        self.team_one.stats()
+        self.team_two.stats()
 
 
 if __name__ == "__main__":
-    fireball = Ability('fireball', 40)
     arena = Arena('Big Arena')
     arena.build_team_one()
+    arena.build_team_two()
+    arena.team_battle()
+    arena.show_stats()
+
+
+
+
 
     ##running this file from terminal will execute this block
     # snoop = Hero('Snoop Dogg')
     # snoop_ability = Ability('Smoke Cloud', 50)
     # snoop.add_ability(snoop_ability)
-    # # print(snoop.attack())
+    # # # print(snoop.attack())
     # willie = Hero('Willie Nelson')
     # hotbox = Ability('Hot Box', 2)
     # willie.add_ability(hotbox)
-    # green_team = Team('Green Team')
-    # green_team.add_hero(snoop)
-    # green_team.view_heroes()
+    # # green_team = Team('Green Team')
+    # # green_team.add_hero(snoop)
+    # # green_team.view_heroes()
     # snoop.fight(willie)
+    # print(snoop.kills)
+    # print(willie.deaths)
     # willie.show_stats()
     # snoop.show_stats()
