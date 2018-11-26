@@ -48,6 +48,7 @@ class Hero:
             print('{} died'.format(self.name))
             return False
 
+
     def add_kill(self, num_kills):
         """Adds kill to hero"""
         self.kills += num_kills
@@ -80,10 +81,12 @@ class Ability:
     def attack(self):
         """ returns a random attack value between 1 and max_damage """
         #random number generator in range(0, max_damage)
-        attack_val = random.randint(0, self.max_damage)
+        attack_val = random.randint(self.max_damage // 2, self.max_damage)
         return attack_val
-    def update_attack(self, max_dmg):
-        self.max_damage = max_dmg
+
+    def update_attack(self, new_dmg):
+        """Allows user to update attack damage of ability """
+        self.max_damage = new_dmg
 
 class Weapon(Ability):
     def attack(self):
@@ -101,9 +104,9 @@ class Armor:
 
 
 class Team:
-    def __init__(self, team_name):
-        """Initiates the hero class with a team_name"""
-        self.team_name = team_name
+    def __init__(self, name):
+        """Initiates the hero class with a name"""
+        self.name = name
         self.heroes = list()
     def add_hero(self, hero):
         """ Adds a hero to the Team its called on"""
@@ -115,16 +118,34 @@ class Team:
 
     def remove_hero(self, name):
         """Removes a Hero from the Team"""
-        if name in self.heroes:
-            i = self.heroes.index(name)
-        else:
+        index = self.find_hero(name)
+        if index == -1:
             return 0
-        self.heroes.pop(i)
-    def view_heroes(self):
+        self.heroes.pop(index)
+
+    def view_all_heroes(self):
         """Prints names of heroes on team"""
-        print("Viewing {}'s Heroes: ".format(self.team_name))
+        print("Viewing {}'s Heroes: ".format(self.name))
         for i in self.heroes:
             print(i.name)
+
+    # def find_hero(self, name):
+    #     """Find specific hero on team given the name of hero """
+    #     if len(self.heroes) == 0:
+    #         return 0
+    #     for hero in self.heroes:
+    #         if hero.name == name:
+    #             return hero
+    #         else:
+    #             return 0
+
+    def find_hero(self, name):
+        """Find index of specific hero on a team """
+        hero_index = -1
+        for index, hero in enumerate(self.heroes):
+            if hero.name == name:
+                hero_index = index
+        return hero_index
 
     def stats(self):
         """ Prints the ratio of kills/death for each memeber of the team"""
@@ -180,17 +201,17 @@ class Arena:
 
 
     def build_team(self):
-        team_name = input('Enter a team name: ')
-        new_team = Team(team_name)
+        name = input('Enter a team name: ')
+        new_team = Team(name)
         keep_adding_heroes = True
         while keep_adding_heroes:
-            print('Adding a hero to {}...'.format(team_name))
+            print('Adding a hero to {}...'.format(name))
             new_hero = Hero(input('Enter the name of the hero: '))
             new_hero.abilities = self.hero_additions('ability', new_hero.name)
             new_hero.abilities = self.hero_additions('weapon', new_hero.name)
             new_hero.armors = self.hero_additions('armor', new_hero.name)
             new_team.add_hero(new_hero)
-            keep_adding_heroes = self.yes_or_no('Would you like to keep adding heroes to {}? Answer ( y/n ): '.format(team_name))
+            keep_adding_heroes = self.yes_or_no('Would you like to keep adding heroes to {}? Answer ( y/n ): '.format(name))
         return new_team
 
     def yes_or_no(self, message):
@@ -238,11 +259,11 @@ class Arena:
             self.team_one.attack(self.team_two)
             self.team_two.attack(self.team_one)
             if self.team_one.still_alive():
-                print('{} wins the battle!'.format(self.team_one.team_name))
+                print('{} wins the battle!'.format(self.team_one.name))
                 self.team_one.update_kills(len(self.team_two.heroes))
                 return False
             else:
-                print('{} wins the battle!'.format(self.team_two.team_name))
+                print('{} wins the battle!'.format(self.team_two.name))
                 self.team_two.update_kills(len(self.team_one.heroes))
                 return False
 
