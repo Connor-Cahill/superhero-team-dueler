@@ -74,23 +74,23 @@ class Hero:
         print("{} K/D Ratio: {}".format(self.name, kd_ratio))
 
 class Ability:
-    def __init__(self, name, max_damage):
+    def __init__(self, name, strength):
         self.name = name
-        self.max_damage = max_damage
+        self.strength = strength
 
     def attack(self):
-        """ returns a random attack value between 1 and max_damage """
-        #random number generator in range(0, max_damage)
-        attack_val = random.randint(self.max_damage // 2, self.max_damage)
+        """ returns a random attack value between 1 and strength """
+        #random number generator in range(0, strength)
+        attack_val = random.randint(0, self.strength)
         return attack_val
 
     def update_attack(self, new_dmg):
         """Allows user to update attack damage of ability """
-        self.max_damage = new_dmg
+        self.strength = new_dmg
 
 class Weapon(Ability):
     def attack(self):
-        weapon_damage = random.randint(self.max_damage//2, self.max_damage)
+        weapon_damage = random.randint(self.strength//2, self.strength)
         return weapon_damage
 class Armor:
     def __init__(self, name, max_block):
@@ -108,11 +108,13 @@ class Team:
         """Initiates the hero class with a name"""
         self.name = name
         self.heroes = list()
+
     def add_hero(self, hero):
         """ Adds a hero to the Team its called on"""
         self.heroes.append(hero)
 
     def revive_heroes(self, health = 100):
+        """Iterates through heroes on team and sets their health back to 100(default starting health) """
         for i in self.heroes:
             i.current_health = health
 
@@ -129,15 +131,6 @@ class Team:
         for i in self.heroes:
             print(i.name)
 
-    # def find_hero(self, name):
-    #     """Find specific hero on team given the name of hero """
-    #     if len(self.heroes) == 0:
-    #         return 0
-    #     for hero in self.heroes:
-    #         if hero.name == name:
-    #             return hero
-    #         else:
-    #             return 0
 
     def find_hero(self, name):
         """Find index of specific hero on a team """
@@ -153,10 +146,12 @@ class Team:
             i.show_stats()
 
     def attack(self, other_team):
-        """Functions that itereates through the heroes in list and returns total attack damage """
-        team_dmg = sum([hero.attack() for hero in self.heroes])
-        enemies_killed = other_team.defend(team_dmg)
-        self.update_kills(enemies_killed)
+        """Selects a random alive hero from your team and opposite team and sets them to fight each other until one dies """
+        while len(self.alive_heroes()) > 0 and len(other_team.alive_heroes()) > 0:
+            random_hero1 = random.choice(self.alive_heroes())
+            random_hero2 = random.choice(other_team.alive_heroes())
+            ##make the randomly selected alive heroes fight
+            random_hero1.fight(random_hero2)
 
     def update_kills(self, kills):
         """Updates a heroes kill count for kills made in team battles """
@@ -164,12 +159,14 @@ class Team:
             hero.add_kill(kills)
 
 
-    def still_alive(self):
-        """Loops through teams hero list and returns true or false whether the hero is alive or not  """
+    def alive_heroes(self):
+        """Makes a list of alive heroes from team """
+        alive_heroes = []
         for hero in self.heroes:
-            if hero.current_health > 0:
-                return True
-            return False
+            if hero.is_alive():
+                alive_heroes.append(hero)
+            return alive_heroes
+
 
     def defend(self, dmg_amount):
         """Takes the sum of all heroes in Team class and returns that as the defend value of Team """
@@ -178,16 +175,16 @@ class Team:
         if excess_dmg > 0:
             return self.take_damage(excess_dmg)
         return 0
-
-    def take_damage(self, dmg):
-        """Takes damage from input and deals that to the team  """
-        dmg = dmg / len(self.heroes)
-        dead_heroes = 0
-        for hero in self.heroes:
-            hero.take_damage(dmg)
-            if hero.current_health <= 0:
-                dead_heroes += 1
-        return dead_heroes
+    ##I dont think I need this 
+    # def take_damage(self, dmg):
+    #     """Takes damage from input and deals that to the team  """
+    #     dmg = dmg / len(self.heroes)
+    #     dead_heroes = 0
+    #     for hero in self.heroes:
+    #         hero.take_damage(dmg)
+    #         if hero.current_health <= 0:
+    #             dead_heroes += 1
+    #     return dead_heroes
 
 
 
@@ -253,23 +250,39 @@ class Arena:
         self.team_two = self.build_team()
         return self.team_two
 
+    # def team_battle(self):
+    #     """ while loop for 2 teams to fight until all the heroes on one team are dead """
+    #     while self.team_one.still_alive() and self.team_two.still_alive():
+    #         self.team_one.attack(self.team_two)
+    #         self.team_two.attack(self.team_one)
+    #         if self.team_one.still_alive():
+    #             print('{} wins the battle!'.format(self.team_one.name))
+    #             self.team_one.update_kills(len(self.team_two.heroes))
+    #             return False
+    #         else:
+    #             print('{} wins the battle!'.format(self.team_two.name))
+    #             self.team_two.update_kills(len(self.team_one.heroes))
+    #             return False
+
     def team_battle(self):
-        """while loop for 2 teams to fight until all the heroes on one team are dead """
-        while self.team_one.still_alive() and self.team_two.still_alive():
+        """ While team 1 and team 2 have living heroes they will fight. While loop will break when one team has no living hereos left."""
+        print('Team Battle Starting...')
+        while self.team_one.alive_heroes() and self.team_two.alive_heroes():
             self.team_one.attack(self.team_two)
             self.team_two.attack(self.team_one)
-            if self.team_one.still_alive():
-                print('{} wins the battle!'.format(self.team_one.name))
+            if self.team_one.alive_heroes():
+                print('{} wins this battle.'.format(self.team_one.name))
                 self.team_one.update_kills(len(self.team_two.heroes))
                 return False
             else:
-                print('{} wins the battle!'.format(self.team_two.name))
+                print('{} wins this battle.'.format(self.team_two.name))
                 self.team_two.update_kills(len(self.team_one.heroes))
                 return False
 
 
+
     def show_stats(self):
-        """Prints all heroes in arena stats(k/d ratio) """
+        """ Prints all heroes in arena stats(k/d ratio) """
         print('Printing stats')
         self.team_one.stats()
         self.team_two.stats()
